@@ -31,16 +31,16 @@ class GameController extends Controller
 
   
         $em = $this->getDoctrine()->getManager();
-        // 
+         
         $query = $em->createQuery("SELECT p FROM 'AppBundle:Word' p WHERE p.id > 0 ORDER BY p.id DESC");
 
         $word = $query->getResult();
 
-        $lo =  $word[array_rand($word)];
+        $wo =  $word[array_rand($word)];
 
          $game = new Game();
-         // insert the word to the game table  method from entitty Game
-         $game->setGame($lo);
+         // insert the word to the game table use  method from entitty Game
+         $game->setGame($wo);
        
          $em->persist($game);
       
@@ -50,37 +50,32 @@ class GameController extends Controller
    
         return new Response('A new game started  at games/' . $game_id);
      
-       
-    }
+     }
 
     /**
      * @var string 
      * @var word 
      * @var letter
      */
-    public function checkLetterAction ($letter, $string) {
+     public function checkLetterAction ($letter, $string) {
     
-    $g_word = [];
-    $found = 0;
-    $session = $this->get('session');
-        // if no entry in the table under attempt 
-        for($i=0; $i< strlen($string); $i++) {
+        $g_word = [];
+        $found = 0;
+        $session = $this->get('session');
             
-             $g_word[$i] = '*';
+            for($i=0; $i< strlen($string); $i++) {
+                // remove the * when letter match  
+                $g_word[$i] = '*';
 
-            if($string[$i] === $letter) {
+                if($string[$i] === $letter) {
                     $g_word[$i] = $letter; 
-
                     $found ++ ;
-                     } 
-            }  
+                 } 
+             }  
 
-              $jerry = implode("", $g_word);
-              
-            return $jerry;
-
-
-}
+       $updatedString = implode("", $g_word);
+       return $updatedString;
+     }
   
     /**
      * @var string 
@@ -94,89 +89,76 @@ class GameController extends Controller
     }
 
     /**
-     * 
-     *
      * @Route("/{id}")
      * @Method("PUT")
      */
     public function guessAction(Game $game ) {   
        
-   
-
+       $request = $this->getRequest();
+       $l = $request->get('ot');  
       
-    $request = $this->getRequest();
-    $l = $request->get('ot');  
-     
-    //  should be in the entity as constraints  
-    if(!preg_match("/^[a-z]+$/", $l) == 1) {
-
-        die('please use only a-z characters');
-} 
+        if(!preg_match("/^[a-z]+$/", $l) == 1) {
+        
+           return new Response('Please use only a-z characters');
+        } 
  
+        $session =  $this->get('session');
+        $original_word = $game->getGame();
 
-     
-     $session =  $this->get('session');
-     $original_word = $game->getGame();
-
-
-
-    if ($session->has('tries_left')) {
+        if ($session->has('tries_left')) {
         $session->set('tries_left', ($session->get('tries_left')-1));
-        
-    } else {  $session->set('tries_left', 10); }
+        } else {  
+            $session->set('tries_left', 10); 
+        }
 
-
-
-   
         $guess= $this->checkLetterAction($l, $original_word);
-        
-
-             if (strrpos($original_word,$l))  {
+        // search for last occurance 
+        if (strrpos($original_word,$l))  {
 
                 if($session->has('guess')) {
         
                     $pos = strrpos($original_word, $l) ;
 
                      $session->set('guess', $this->replace_char($session->get('guess'),$pos, $l));
+                 }  else {
+                    $session->set('guess', $guess); 
                  }
-                     else {$session->set('guess', $guess); }
-            }
+         }
              
-
-             if (strpos($original_word, $l) !== FALSE ) {
+          // search for first occurance 
+         if (strpos($original_word, $l) !== FALSE ) {
         
-
-                 if($session->has('guess')) {
+                if($session->has('guess')) {
         
                     $pos = strpos($original_word, $l) ;
 
-                     $session->set('guess', $this->replace_char($session->get('guess'),$pos, $l));
+                    $session->set('guess', $this->replace_char($session->get('guess'),$pos, $l));
+                 }  else {
+                    $session->set('guess', $guess); 
                  }
-                     else {$session->set('guess', $guess); }
-            }
+          }
     
-                    
         $status = 'busy';
          
-            if($session->get('tries_left') <= 0) {
+        if($session->get('tries_left') <= 0) {
 
-            $status = 'Failed'; 
-            $session->invalidate();
-            }  
-            if ($session->get('guess') === $original_word) {
-            $status ='succuess';  
-            $session->invalidate();   
-            }
+        $status = 'Failed'; 
+        $session->invalidate();
+        }  
+        if ($session->get('guess') === $original_word) {
+
+        $status ='succuess';  
+        $session->invalidate();   
+        }
 
         $response = new Response();
         $response->setContent(json_encode(array(
-           
-            'word' => $session->get('guess')? : $guess,
-            'tries_left'=> $session->get('tries_left') ? :'zero tries left' ,
-            'status'=>$status,
-            )));
+
+        'word' => $session->get('guess')? : $guess,
+        'tries_left'=> $session->get('tries_left') ? :'zero tries left' ,
+        'status'=>$status,
+        )));
         $response->headers->set('Content-Type', 'application/json');
-        
         return $response;
 
     }
