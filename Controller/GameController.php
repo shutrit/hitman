@@ -13,8 +13,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 
 
 /**
-* Start a new game with a new word randomly chosen from word table  
-*
+* 
 * @Route("/games", name="start_game")
 * 
 */
@@ -39,7 +38,7 @@ class GameController extends Controller
         $wo =  $word[array_rand($word)];
 
          $game = new Game();
-         // insert the word to the game table use  method from entitty Game
+         // insert the word to the game table use method from entitty Game
          $game->setGame($wo);
        
          $em->persist($game);
