@@ -7,4 +7,5 @@ the api has two resources:
 2) games/id                method put  to send a request with your letter of choice. 11 guesses are permitted. 
    upon a successful guess of all the letters in a word a response message confrims the victory and a game is finished.
    example request :  curl -X PUT -d ot=e localhost:8000/games/4   
+   4 is the game id ,  ot="Letter of choice"
   
